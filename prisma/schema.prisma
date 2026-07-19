@@ -41,6 +41,7 @@ model Post {
 
 model Comment {
   id     String   @id @default(uuid())
+  text String @db.VarChar(100)
   postId String
   userId String
   likes  String[]

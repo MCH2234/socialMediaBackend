@@ -8,6 +8,8 @@ post.use(passport.authenticate("jwt", { session: false }));
 
 post.get("/", controller.getAllUserPosts);
 post.post("/", controller.createPost);
-// post.get("/:postId");
+post.get("/:postId", controller.getSpecificPost);
+post.get("/:postId/comments", controller.getCommentsOfPost);
+post.post("/:postId/comments", controller.addComment);
 
 export default post;
