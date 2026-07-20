@@ -24,6 +24,8 @@ model User {
   comments        Comment[]
   sendRequest     FollowRequest[] @relation("SentRequest")
   receivedRequest FollowRequest[] @relation("ReceivedRequest")
+  postLikes       PostLikes[]
+  commentLikes    CommentLikes[]
 
   @@map("users")
 }
@@ -40,26 +42,42 @@ model FollowRequest {
 }
 
 model Post {
-  id       String    @id @default(uuid())
+  id       String      @id @default(uuid())
   userId   String
-  user     User      @relation(fields: [userId], references: [id])
-  text     String    @db.VarChar(250)
+  user     User        @relation(fields: [userId], references: [id])
+  text     String      @db.VarChar(250)
   date     DateTime
+  likes    PostLikes[]
   comments Comment[]
-  likes    String[]
 
   @@map("posts")
 }
 
+model PostLikes {
+  id     Int    @id @default(autoincrement())
+  userId String
+  postId String
+  user   User   @relation(fields: [userId], references: [id])
+  post   Post   @relation(fields: [postId], references: [id])
+}
+
 model Comment {
-  id     String   @id @default(uuid())
-  text   String   @db.VarChar(100)
+  id     String         @id @default(uuid())
+  text   String         @db.VarChar(100)
   postId String
   userId String
-  likes  String[]
+  likes  CommentLikes[]
   date   DateTime
-  post   Post     @relation(fields: [postId], references: [id])
-  user   User     @relation(fields: [userId], references: [id])
+  post   Post           @relation(fields: [postId], references: [id])
+  user   User           @relation(fields: [userId], references: [id])
 
   @@map("comments")
 }
+
+model CommentLikes {
+  id        Int     @id @default(autoincrement())
+  userId    String
+  commentId String
+  user      User    @relation(fields: [userId], references: [id])
+  comment   Comment @relation(fields: [commentId], references: [id])
+  }
