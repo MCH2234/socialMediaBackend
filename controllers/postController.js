@@ -113,10 +113,46 @@ const addComment = async (req, res) => {
     }
   }
 };
+
+const getPostsOfUsersCurrentUserFollows = async (req, res) => {
+  try {
+    const userFollows = await prisma.user.findUnique({
+      where: {
+        id: req.user.id,
+      },
+      select: {
+        following: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+    const followingId = [];
+    userFollows.following.forEach((follow) => {
+      followingId.push(follow.id);
+    });
+    const allFollowingPosts = await prisma.post.findMany({
+      where: {
+        userId: {
+          in: followingId,
+        },
+      },
+    });
+    console.log(userFollows, allFollowingPosts);
+    res.send(allFollowingPosts);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      error: "An error occured",
+    });
+  }
+};
 export {
   createPost,
   getPostsOfCurrentUser,
   getSpecificPost,
   getCommentsOfPost,
   addComment,
+  getPostsOfUsersCurrentUserFollows,
 };
