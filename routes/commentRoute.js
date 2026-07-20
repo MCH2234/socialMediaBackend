@@ -7,6 +7,6 @@ const comment = Router();
 comment.use(passport.authenticate("jwt", { session: false }));
 
 comment.get("/", controller.getAllComments);
-comment.get("/:commentId", controller.getAllComments);
+comment.get("/:commentId", controller.getSpecificComment);
 
 export default comment;

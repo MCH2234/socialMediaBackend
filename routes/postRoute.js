@@ -6,7 +6,7 @@ const post = Router();
 
 post.use(passport.authenticate("jwt", { session: false }));
 
-post.get("/", controller.getAllUserPosts);
+post.get("/", controller.getPostsOfCurrentUser);
 post.post("/", controller.createPost);
 post.get("/:postId", controller.getSpecificPost);
 post.get("/:postId/comments", controller.getCommentsOfPost);

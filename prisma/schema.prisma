@@ -13,26 +13,38 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  user      String    @unique
-  password  String
-  first     String
-  last      String
-  followers User[]    @relation("UserFollow")
-  following User[]    @relation("UserFollow")
-  post      Post[]
-  comments  Comment[]
-  follow_requests String[]
+  id              String          @id @default(uuid())
+  user            String          @unique
+  password        String
+  first           String
+  last            String
+  followers       User[]          @relation("UserFollow")
+  following       User[]          @relation("UserFollow")
+  post            Post[]
+  comments        Comment[]
+  sendRequest     FollowRequest[] @relation("SentRequest")
+  receivedRequest FollowRequest[] @relation("ReceivedRequest")
 
   @@map("users")
+}
+
+model FollowRequest {
+  id     String @id @default(uuid())
+  status String @default("Pending")
+  fromId String
+  toId   String
+  from   User   @relation("SentRequest", fields: [fromId], references: [id])
+  to     User   @relation("ReceivedRequest", fields: [toId], references: [id])
+
+  @@unique([fromId, toId])
 }
 
 model Post {
   id       String    @id @default(uuid())
   userId   String
   user     User      @relation(fields: [userId], references: [id])
-  text String @db.VarChar(250)
-  date DateTime
+  text     String    @db.VarChar(250)
+  date     DateTime
   comments Comment[]
   likes    String[]
 
@@ -41,11 +53,11 @@ model Post {
 
 model Comment {
   id     String   @id @default(uuid())
-  text String @db.VarChar(100)
+  text   String   @db.VarChar(100)
   postId String
   userId String
   likes  String[]
-  date DateTime
+  date   DateTime
   post   Post     @relation(fields: [postId], references: [id])
   user   User     @relation(fields: [userId], references: [id])
 

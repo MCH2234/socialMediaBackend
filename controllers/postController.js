@@ -23,7 +23,7 @@ const createPost = async (req, res) => {
     res.json({ message: "Failed" });
   }
 };
-const getAllUserPosts = async (req, res) => {
+const getPostsOfCurrentUser = async (req, res) => {
   const posts = await prisma.post.findMany({
     where: {
       userId: req.user.id,
@@ -115,7 +115,7 @@ const addComment = async (req, res) => {
 };
 export {
   createPost,
-  getAllUserPosts,
+  getPostsOfCurrentUser,
   getSpecificPost,
   getCommentsOfPost,
   addComment,
