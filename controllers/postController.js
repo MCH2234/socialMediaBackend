@@ -51,6 +51,35 @@ const getSpecificPost = async (req, res) => {
           likes: true,
         },
       },
+      comments: {
+        select: {
+          id: true,
+          date: true,
+          postId: true,
+          user: {
+            select: {
+              id: true,
+              user: true,
+              first: true,
+              last: true,
+            },
+          },
+          text: true,
+          likes: {
+            select: {
+              id: true,
+              user: {
+                select: {
+                  id: true,
+                  user: true,
+                  first: true,
+                  last: true,
+                },
+              },
+            },
+          },
+        },
+      },
       likes: {
         select: {
           id: true,
@@ -90,6 +119,21 @@ const getCommentsOfPost = async (req, res) => {
       where: {
         postId: post,
       },
+      include: {
+        _count: {
+          select: {
+            likes: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            user: true,
+            first: true,
+            last: true,
+          },
+        },
+      },
     });
     if (comments !== null) {
       return res.json({
@@ -123,6 +167,9 @@ const addComment = async (req, res) => {
     const createComment = await prisma.comment.create({
       data: {
         text: commentText,
+        date: new Date(),
+        postId: postId,
+        userId: req.user.id,
       },
     });
     if (createComment !== null) {
@@ -156,6 +203,43 @@ const getPostsOfUsersCurrentUserFollows = async (req, res) => {
       where: {
         userId: {
           in: followingId,
+        },
+      },
+      select: {
+        comments: {
+          select: {
+            id: true,
+            likes: {
+              select: {
+                user: {
+                  select: {
+                    user: true,
+                    first: true,
+                    last: true,
+                  },
+                },
+              },
+            },
+            user: {
+              select: {
+                user: true,
+                first: true,
+                last: true,
+              },
+            },
+          },
+        },
+        likes: {
+          select: {
+            id: true,
+            user: {
+              select: {
+                user: true,
+                first: true,
+                last: true,
+              },
+            },
+          },
         },
       },
     });
