@@ -11,7 +11,7 @@ user.get("/followers", controller.getUserFollowers);
 user.get("/following", controller.getWhoTheUserFollows);
 user.get("/follow/request", controller.getFollowRequests);
 user.post("/follow/request/:userId", controller.sendfollowRequest);
-user.post("/follow/:requestId", controller.followUser);
+user.post("/follow/:requestId", controller.allowFollow);
 user.delete("/follow/:userId", controller.unfollowUser);
 
 export default user;

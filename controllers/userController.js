@@ -1,6 +1,6 @@
 import prisma from "../lib/prisma.js";
 
-const followUser = async (req, res) => {
+const allowFollow = async (req, res) => {
   const requestId = req.params.requestId;
   try {
     const findRequest = await prisma.followRequest.findUnique({
@@ -178,7 +178,7 @@ const getFollowRequests = async (req, res) => {
 };
 
 export {
-  followUser,
+  allowFollow,
   unfollowUser,
   getUserFollowers,
   getWhoTheUserFollows,

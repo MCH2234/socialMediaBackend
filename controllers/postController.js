@@ -41,9 +41,29 @@ const getPostsOfCurrentUser = async (req, res) => {
 };
 const getSpecificPost = async (req, res) => {
   const postId = req.params.postId;
-  const post = await prisma.post.findFirst({
+  const post = await prisma.post.findUnique({
     where: {
       id: postId,
+    },
+    include: {
+      _count: {
+        select: {
+          likes: true,
+        },
+      },
+      likes: {
+        select: {
+          id: true,
+          user: {
+            select: {
+              id: true,
+              user: true,
+              first: true,
+              last: true,
+            },
+          },
+        },
+      },
     },
   });
   if (post !== null) {
@@ -56,7 +76,7 @@ const getSpecificPost = async (req, res) => {
 };
 const getCommentsOfPost = async (req, res) => {
   const postId = req.params.postId;
-  const post = await prisma.post.findFirst({
+  const post = await prisma.post.findUnique({
     where: {
       id: postId,
     },
@@ -85,7 +105,7 @@ const getCommentsOfPost = async (req, res) => {
 const addComment = async (req, res) => {
   const postId = req.params.postId;
   const commentText = req.body.comment;
-  const post = await prisma.post.findFirst({
+  const post = await prisma.post.findUnique({
     where: {
       id: postId,
     },
@@ -148,6 +168,108 @@ const getPostsOfUsersCurrentUserFollows = async (req, res) => {
     });
   }
 };
+
+const likePost = async (req, res) => {
+  try {
+    const postId = req.params.postId;
+    const likeDuplicates = await prisma.postLikes.findFirst({
+      where: {
+        userId: req.user.id,
+        postId: postId,
+      },
+    });
+    if (likeDuplicates) {
+      return res.json({
+        message: "Post already liked",
+      });
+    } else {
+      const postExists = await prisma.post.findUnique({
+        where: {
+          id: postId,
+        },
+        select: {
+          id: true,
+        },
+      });
+      if (!postExists) {
+        return res.json({ message: "Post couldn't be found" });
+      } else {
+        const likePost = await prisma.postLikes.create({
+          data: {
+            postId: postId,
+            userId: req.user.id,
+          },
+        });
+        if (!likePost) {
+          return res.json({ message: "Post couldn't be liked" });
+        } else {
+          return res.json({ message: "Post liked successfully" });
+        }
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    res.json({
+      error: "An error occured",
+    });
+  }
+};
+
+const unlikePost = async (req, res) => {
+  try {
+    const likeId = parseInt(req.params.likeId);
+    const likeExists = await prisma.postLikes.findUnique({
+      where: {
+        id: likeId,
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+    if (!likeExists) {
+      return res.json({
+        message: "Post isn't liked/like couldn't be found",
+      });
+    } else {
+      if (likeExists.userId !== req.user.id) {
+        return res.json({
+          message: "Permission denied",
+        });
+      }
+      const unlike = await prisma.postLikes.delete({
+        where: {
+          id: likeId,
+        },
+      });
+      if (!unlike) {
+        return res.json({
+          message: "Post couldn't be unliked",
+        });
+      } else {
+        return res.json({
+          message: "Post unliked successfuly",
+        });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    res.json({
+      error: "An error occured",
+    });
+  }
+};
+
+// const getPostLikes = async (req, res) => {
+//   try {
+//     const postId = req.params.postId;
+//   } catch (error) {
+//     console.log(error);
+//     res.json({
+//       error: "An error occured",
+//     });
+//   }
+// };
 export {
   createPost,
   getPostsOfCurrentUser,
@@ -155,4 +277,7 @@ export {
   getCommentsOfPost,
   addComment,
   getPostsOfUsersCurrentUserFollows,
+  likePost,
+  unlikePost,
+  // getPostLikes,
 };
