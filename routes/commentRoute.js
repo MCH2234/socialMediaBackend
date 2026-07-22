@@ -8,6 +8,8 @@ comment.use(passport.authenticate("jwt", { session: false }));
 
 comment.get("/", controller.getAllComments);
 comment.get("/:commentId", controller.getSpecificComment);
+comment.get("/replies/:parentId", controller.getRepliesOfComment);
+comment.post("/:commentId", controller.addCommentToAnotherComment);
 comment.post("/like/:commentId", controller.likeComment);
 comment.delete("/like/:likeId", controller.unlikeComment);
 

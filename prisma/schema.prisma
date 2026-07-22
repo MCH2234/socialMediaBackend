@@ -62,14 +62,17 @@ model PostLikes {
 }
 
 model Comment {
-  id     String         @id @default(uuid())
-  text   String         @db.VarChar(100)
-  postId String
-  userId String
-  likes  CommentLikes[]
-  date   DateTime
-  post   Post           @relation(fields: [postId], references: [id])
-  user   User           @relation(fields: [userId], references: [id])
+  id              String         @id @default(uuid())
+  text            String         @db.VarChar(100)
+  postId          String?
+  userId          String
+  likes           CommentLikes[]
+  date            DateTime
+  post            Post?          @relation(fields: [postId], references: [id])
+  user            User           @relation(fields: [userId], references: [id])
+  parentCommentId String?
+  parentComment   Comment?       @relation("SubComments", fields: [parentCommentId], references: [id])
+  childComments   Comment[]      @relation("SubComments")
 
   @@map("comments")
 }
@@ -80,4 +83,4 @@ model CommentLikes {
   commentId String
   user      User    @relation(fields: [userId], references: [id])
   comment   Comment @relation(fields: [commentId], references: [id])
-  }
+}

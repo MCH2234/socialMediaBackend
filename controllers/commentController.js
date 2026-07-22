@@ -151,4 +151,110 @@ const unlikeComment = async (req, res) => {
     });
   }
 };
-export { getAllComments, getSpecificComment, likeComment, unlikeComment };
+
+const addCommentToAnotherComment = async (req, res) => {
+  try {
+    const comment = req.body.comment;
+    const commentId = req.params.commentId;
+    const commentExists = await prisma.comment.findUnique({
+      where: {
+        id: commentId,
+      },
+      select: {
+        id: true,
+      },
+    });
+    if (!commentExists) {
+      return res.json({
+        message: "Comment doesn't exist",
+      });
+    } else {
+      const newComment = await prisma.comment.create({
+        data: {
+          text: comment,
+          userId: req.user.id,
+          date: new Date(),
+          parentCommentId: commentId,
+        },
+      });
+      if (newComment) {
+        return res.json({
+          message: "Comment added successfuly",
+        });
+      } else {
+        return res.json({
+          message: "Comment couldn't be added",
+        });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    return res.json({
+      error: "An error occured",
+    });
+  }
+};
+
+const getRepliesOfComment = async (req, res) => {
+  try {
+    const parentId = req.params.parentId;
+    const parentCommentExists = await prisma.comment.findUnique({
+      where: {
+        id: parentId,
+      },
+      select: {
+        id: true,
+        childComments: {
+          select: {
+            user: {
+              select: {
+                id: true,
+                user: true,
+                first: true,
+                last: true,
+              },
+            },
+            id: true,
+            text: true,
+            date: true,
+            likes: {
+              select: {
+                id: true,
+                user: {
+                  select: {
+                    id: true,
+                    user: true,
+                    first: true,
+                    last: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!parentCommentExists) {
+      return res.json({
+        message: "Parent comment doesn't exist or couldn't be found",
+      });
+    } else {
+      return res.json({
+        replies: parentCommentExists,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.json({
+      error: "An error occured",
+    });
+  }
+};
+export {
+  addCommentToAnotherComment,
+  getAllComments,
+  getSpecificComment,
+  likeComment,
+  unlikeComment,
+  getRepliesOfComment,
+};
