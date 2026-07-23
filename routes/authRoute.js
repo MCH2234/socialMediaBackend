@@ -4,6 +4,6 @@ import * as controller from "../controllers/authController.js";
 const auth = Router();
 
 auth.post("/signup", controller.signupValidation);
-auth.post("/login", controller.login);
+auth.post("/login", controller.loginValidation);
 
 export default auth;

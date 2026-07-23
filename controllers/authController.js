@@ -76,6 +76,67 @@ const signupValidation = [
   },
 ];
 
+const loginValidation = [
+  body("user")
+    .trim()
+    .not()
+    .isEmpty()
+    .withMessage("User field can't be empty")
+    .isLength({ min: 3, max: 15 })
+    .withMessage("Username has to be between 3 and 15 characters"),
+  body("password")
+    .not()
+    .isEmpty()
+    .withMessage("Password field can't be empty")
+    .isLength({ min: 6, max: 15 })
+    .withMessage("Password has to be between 6 and 15 characters"),
+
+  async (req, res) => {
+    const valErrors = validationResult(req);
+    if (valErrors.isEmpty() === false) {
+      const errorMsg = [];
+      valErrors.array().forEach((err) => errorMsg.push(err.msg));
+      return res.status(409).json({ error: errorMsg });
+    }
+    const user = req.body.user;
+    const password = req.body.password;
+
+    const findUser = await prisma.user.findFirst({
+      where: {
+        user: user,
+      },
+      select: {
+        id: true,
+        user: true,
+        password: true,
+      },
+    });
+
+    if (findUser !== null) {
+      const verifyPassword = await bcrypt.compare(password, findUser.password);
+      if (verifyPassword === true) {
+        sign(
+          {
+            id: findUser.id,
+          },
+          process.env.jwt_secret,
+          (err, token) => {
+            return res.json({
+              token: token,
+            });
+          },
+        );
+      } else {
+        res.json({
+          error: ["Invalid user or password"],
+        });
+      }
+    } else {
+      res.json({ error: ["Invalid user or password"] });
+    }
+  },
+];
+
 const signup = async (req, res) => {
   const user = req.body.user;
   const password = req.body.password;
@@ -151,4 +212,4 @@ const login = async (req, res) => {
   }
 };
 
-export { login, signupValidation };
+export { loginValidation, signupValidation };
