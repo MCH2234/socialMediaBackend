@@ -121,18 +121,18 @@ const loginValidation = [
           },
           process.env.jwt_secret,
           (err, token) => {
-            return res.json({
+            return res.status(200).json({
               token: token,
             });
           },
         );
       } else {
-        res.json({
+        res.status(409).json({
           error: ["Invalid user or password"],
         });
       }
     } else {
-      res.json({ error: ["Invalid user or password"] });
+      res.status(409).json({ error: ["Invalid user or password"] });
     }
   },
 ];
@@ -212,4 +212,14 @@ const login = async (req, res) => {
   }
 };
 
-export { loginValidation, signupValidation };
+const logout = (req, res) => {
+  if (req.user) {
+    req.logOut(() => res.json({ message: "Logout" }));
+  } else {
+    res.status(409).json({
+      message: "Action not permitted",
+    });
+  }
+};
+
+export { loginValidation, signupValidation, logout };

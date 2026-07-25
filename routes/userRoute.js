@@ -6,7 +6,7 @@ const user = Router();
 
 user.use(passport.authenticate("jwt", { session: false }));
 
-user.get("/:userId", controller.userInfo); /// development only
+user.get("/", controller.userInfo);
 user.get("/followers", controller.getUserFollowers);
 user.get("/following", controller.getWhoTheUserFollows);
 user.get("/follow/request", controller.getFollowRequests);

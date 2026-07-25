@@ -1,3 +1,4 @@
+import { nextDay } from "date-fns";
 import prisma from "../lib/prisma.js";
 const createPost = async (req, res) => {
   const content = req.body.text;
@@ -343,7 +344,57 @@ const unlikePost = async (req, res) => {
     });
   }
 };
-
+const getPosts = async (req, res) => {
+  try {
+    if (!req.query) {
+      const findPosts = await prisma.post.findMany({
+        take: 20,
+        orderBy: {
+          date: "asc",
+        },
+      });
+      if (!findPosts) {
+        return res.json({
+          message: "There was an error in getting the posts",
+        });
+      } else {
+        return res.json({
+          posts: findPosts,
+          cursor:
+            findPosts.length === 20 ? findPosts[findPosts.length - 1].id : null,
+        });
+      }
+    } else {
+      const cursor = req.query.cursor;
+      const nextPage = await prisma.post.findMany({
+        take: 20,
+        skip: 1,
+        cursor: {
+          id: cursor,
+        },
+        orderBy: {
+          date: "asc",
+        },
+      });
+      if (nextPage) {
+        return res.json({
+          posts: nextPage,
+          cursor:
+            nextPage.length === 20 ? nextPage[nextPage.length - 1].id : null,
+        });
+      } else {
+        return res.json({
+          message: "There was an error in getting the posts",
+        });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(404).json({
+      error: "An error occured",
+    });
+  }
+};
 // const getPostLikes = async (req, res) => {
 //   try {
 //     const postId = req.params.postId;
@@ -363,5 +414,6 @@ export {
   getPostsOfUsersCurrentUserFollows,
   likePost,
   unlikePost,
+  getPosts,
   // getPostLikes,
 };

@@ -149,12 +149,61 @@ const sendfollowRequest = async (req, res) => {
 };
 
 const userInfo = async (req, res) => {
-  const user = await prisma.user.findFirst({
-    where: {
-      id: req.params.userId,
-    },
-  });
-  res.json({ user: user });
+  try {
+    const findUser = await prisma.user.findUnique({
+      where: {
+        id: req.user.id,
+      },
+      select: {
+        id: true,
+        user: true,
+        first: true,
+        last: true,
+        _count: {
+          select: {
+            followers: true,
+            following: true,
+          },
+        },
+        post: {
+          select: {
+            id: true,
+            text: true,
+            date: true,
+            _count: {
+              select: {
+                likes: true,
+              },
+            },
+          },
+        },
+        comments: {
+          select: {
+            id: true,
+            text: true,
+            date: true,
+            _count: {
+              select: {
+                likes: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    if (findUser) {
+      return res.status(200).json({
+        user: findUser,
+      });
+    } else {
+      return res.status(404).json({
+        error: "User doesn't exist or couldn't be found",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(404).json({ error: "An error occured" });
+  }
 };
 
 const getFollowRequests = async (req, res) => {
