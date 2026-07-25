@@ -11,7 +11,7 @@ post.get("/all", controller.getPosts);
 post.post("/", controller.createPost);
 // post.get("/likes/:postId", controller.getPostLikes);
 post.post("/like/:postId", controller.likePost);
-post.delete("/like/:likeId", controller.unlikePost);
+post.delete("/like/:postId", controller.unlikePost);
 post.get("/follow", controller.getPostsOfUsersCurrentUserFollows);
 post.get("/:postId", controller.getSpecificPost);
 post.get("/:postId/comments", controller.getCommentsOfPost);

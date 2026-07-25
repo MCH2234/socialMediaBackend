@@ -302,29 +302,24 @@ const likePost = async (req, res) => {
 
 const unlikePost = async (req, res) => {
   try {
-    const likeId = parseInt(req.params.likeId);
-    const likeExists = await prisma.postLikes.findUnique({
+    const postId = req.params.postId;
+    const likeExists = await prisma.postLikes.findFirst({
       where: {
-        id: likeId,
+        userId: req.user.id,
+        postId: postId,
       },
       select: {
         id: true,
-        userId: true,
       },
     });
     if (!likeExists) {
       return res.json({
-        message: "Post isn't liked/like couldn't be found",
+        message: "Post isn't liked",
       });
     } else {
-      if (likeExists.userId !== req.user.id) {
-        return res.json({
-          message: "Permission denied",
-        });
-      }
       const unlike = await prisma.postLikes.delete({
         where: {
-          id: likeId,
+          id: likeExists.id,
         },
       });
       if (!unlike) {
@@ -346,16 +341,56 @@ const unlikePost = async (req, res) => {
 };
 const getPosts = async (req, res) => {
   try {
-    if (!req.query) {
+    if (!req.query.cursor) {
       const findPosts = await prisma.post.findMany({
         take: 20,
+        select: {
+          id: true,
+          user: {
+            select: {
+              id: true,
+              user: true,
+              first: true,
+              last: true,
+            },
+          },
+          date: true,
+          text: true,
+          _count: {
+            select: {
+              likes: true,
+            },
+          },
+          comments: {
+            take: 3,
+            select: {
+              date: true,
+              user: {
+                select: {
+                  id: true,
+                  user: true,
+                  first: true,
+                  last: true,
+                },
+              },
+              _count: {
+                select: {
+                  likes: true,
+                },
+              },
+            },
+            orderBy: {
+              date: "asc",
+            },
+          },
+        },
         orderBy: {
           date: "asc",
         },
       });
       if (!findPosts) {
-        return res.json({
-          message: "There was an error in getting the posts",
+        return res.status(404).json({
+          error: "There was an error in getting the posts",
         });
       } else {
         return res.json({
@@ -372,6 +407,46 @@ const getPosts = async (req, res) => {
         cursor: {
           id: cursor,
         },
+        select: {
+          id: true,
+          user: {
+            select: {
+              id: true,
+              user: true,
+              first: true,
+              last: true,
+            },
+          },
+          date: true,
+          text: true,
+          _count: {
+            select: {
+              likes: true,
+            },
+          },
+          comments: {
+            take: 3,
+            select: {
+              date: true,
+              user: {
+                select: {
+                  id: true,
+                  user: true,
+                  first: true,
+                  last: true,
+                },
+              },
+              _count: {
+                select: {
+                  likes: true,
+                },
+              },
+            },
+            orderBy: {
+              date: "asc",
+            },
+          },
+        },
         orderBy: {
           date: "asc",
         },
@@ -383,14 +458,14 @@ const getPosts = async (req, res) => {
             nextPage.length === 20 ? nextPage[nextPage.length - 1].id : null,
         });
       } else {
-        return res.json({
-          message: "There was an error in getting the posts",
+        return res.status(404).json({
+          error: "There was an error in getting the posts",
         });
       }
     }
   } catch (error) {
     console.log(error);
-    return res.status(404).json({
+    return res.status(500).json({
       error: "An error occured",
     });
   }
