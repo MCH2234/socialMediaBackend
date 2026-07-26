@@ -361,6 +361,14 @@ const getPosts = async (req, res) => {
               likes: true,
             },
           },
+          likes: {
+            select: {
+              id: true,
+            },
+            where: {
+              userId: req.user.id,
+            },
+          },
           comments: {
             take: 3,
             select: {
@@ -393,6 +401,15 @@ const getPosts = async (req, res) => {
           error: "There was an error in getting the posts",
         });
       } else {
+        findPosts.forEach((post) => {
+          if (post.likes.length === 0) {
+            delete post.likes;
+            post.isLikedByUser = false;
+          } else {
+            delete post.likes;
+            post.isLikedByUser = true;
+          }
+        });
         return res.json({
           posts: findPosts,
           cursor:
