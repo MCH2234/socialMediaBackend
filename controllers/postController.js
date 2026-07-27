@@ -518,22 +518,24 @@ const deletePost = async (req, res) => {
         return res.status(403).json({
           error: "Permission denied",
         });
+      } else {
+        const deleted = await prisma.post.delete({
+          where: {
+            id: postId,
+          },
+        });
+        if (deleted) {
+          return res.json({
+            message: "Post deleted successfully",
+          });
+        } else {
+          return res.status(404).json({
+            error: "Post couldn't be deleted",
+          });
+        }
       }
     } else {
-      const deleted = await prisma.post.delete({
-        where: {
-          id: postId,
-        },
-      });
-      if (deleted) {
-        return res.json({
-          message: "Post deleted successfully",
-        });
-      } else {
-        return res.status(404).json({
-          error: "Post couldn't be deleted",
-        });
-      }
+      return res.status(404).json({ error: "Post couldn't be found" });
     }
   } catch (error) {
     console.log(error);
