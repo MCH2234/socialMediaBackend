@@ -16,6 +16,19 @@ const createPost = async (req, res) => {
     },
   });
   if (newPost !== null) {
+    newPost.user = {
+      id: req.user.id,
+      first: req.user.first,
+      last: req.user.last,
+      user: req.user.user,
+    };
+    newPost.isLikedByUser = false;
+    newPost.comments = [];
+    newPost._count = {
+      likes: 0,
+    };
+    delete newPost.userId;
+
     return res.json({
       message: "Post created sucessfully",
       post: newPost,
@@ -388,12 +401,12 @@ const getPosts = async (req, res) => {
               },
             },
             orderBy: {
-              date: "asc",
+              date: "desc",
             },
           },
         },
         orderBy: {
-          date: "asc",
+          date: "desc",
         },
       });
       if (!findPosts) {
@@ -460,12 +473,12 @@ const getPosts = async (req, res) => {
               },
             },
             orderBy: {
-              date: "asc",
+              date: "desc",
             },
           },
         },
         orderBy: {
-          date: "asc",
+          date: "desc",
         },
       });
       if (nextPage) {
@@ -487,6 +500,98 @@ const getPosts = async (req, res) => {
     });
   }
 };
+
+const deletePost = async (req, res) => {
+  try {
+    const postId = req.params.postId;
+    const postExists = await prisma.post.findUnique({
+      where: {
+        id: postId,
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+    if (postExists) {
+      if (postExists.userId !== req.user.id) {
+        return res.status(403).json({
+          error: "Permission denied",
+        });
+      }
+    } else {
+      const deleted = await prisma.post.delete({
+        where: {
+          id: postId,
+        },
+      });
+      if (deleted) {
+        return res.json({
+          message: "Post deleted successfully",
+        });
+      } else {
+        return res.status(404).json({
+          error: "Post couldn't be deleted",
+        });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    return res.json({
+      error: "An error occured",
+    });
+  }
+};
+
+const editPost = async (req, res) => {
+  try {
+    const postId = req.params.postId;
+    const edit = req.body.edit;
+    const findPost = await prisma.post.findUnique({
+      where: {
+        id: postId,
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+    if (findPost) {
+      if (findPost.userId !== req.user.id) {
+        return res.status(403).json({
+          error: "Permission denied",
+        });
+      }
+      const updatePost = await prisma.post.update({
+        where: {
+          id: postId,
+        },
+        data: {
+          text: edit,
+          date: new Date(),
+        },
+      });
+      if (updatePost) {
+        return res.json({
+          message: "Post updated successfuly",
+          post: updatePost,
+        });
+      } else {
+        return res.status(400).json({
+          error: "Post coudln't be updated",
+        });
+      }
+    } else {
+      return res.status(404).json({
+        error: "Post doesn't exist",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(404).json({ error: "An error occured" });
+  }
+};
+
 // const getPostLikes = async (req, res) => {
 //   try {
 //     const postId = req.params.postId;
@@ -499,6 +604,8 @@ const getPosts = async (req, res) => {
 // };
 export {
   createPost,
+  editPost,
+  deletePost,
   getPostsOfCurrentUser,
   getSpecificPost,
   getCommentsOfPost,
