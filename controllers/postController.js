@@ -118,46 +118,59 @@ const getSpecificPost = async (req, res) => {
   }
 };
 const getCommentsOfPost = async (req, res) => {
-  const postId = req.params.postId;
-  const post = await prisma.post.findUnique({
-    where: {
-      id: postId,
-    },
-  });
-  if (post === null) {
-    return res.json({
-      message: "Post doesn't exist",
-    });
-  } else {
-    const comments = await prisma.comment.findMany({
+  try {
+    const postId = req.params.postId;
+    const cursor = req.query.cursor;
+    const post = await prisma.post.findUnique({
       where: {
-        postId: post,
-      },
-      include: {
-        _count: {
-          select: {
-            likes: true,
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            user: true,
-            first: true,
-            last: true,
-          },
-        },
+        id: postId,
       },
     });
-    if (comments !== null) {
+    if (post === null) {
       return res.json({
-        comments: comments,
+        message: "Post doesn't exist",
       });
     } else {
-      return res.json({
-        message: "There was an error in getting the comments",
+      const comments = await prisma.comment.findMany({
+        where: {
+          postId: post,
+        },
+        take: 5,
+        skip: 1,
+        cursor: {
+          id: cursor,
+        },
+        include: {
+          _count: {
+            select: {
+              likes: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              user: true,
+              first: true,
+              last: true,
+            },
+          },
+        },
       });
+      if (comments !== null) {
+        const newCursor = comments[comments.length - 1].id;
+        return res.json({
+          comments: comments,
+          cursor: comments.length === 5 ? newCursor : null,
+        });
+      } else {
+        return res.json({
+          message: "There was an error in getting the comments",
+        });
+      }
     }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "An error occured" });
   }
 };
 const addComment = async (req, res) => {
@@ -386,6 +399,7 @@ const getPosts = async (req, res) => {
           comments: {
             take: 3,
             select: {
+              id: true,
               text: true,
               date: true,
               user: {
@@ -461,6 +475,7 @@ const getPosts = async (req, res) => {
             select: {
               date: true,
               text: true,
+              id: true,
               user: {
                 select: {
                   id: true,
