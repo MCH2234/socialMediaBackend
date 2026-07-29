@@ -223,6 +223,7 @@ const getPostsOfUsersCurrentUserFollows = async (req, res) => {
         comments: {
           select: {
             id: true,
+            text: true,
             likes: {
               select: {
                 user: {
@@ -385,6 +386,7 @@ const getPosts = async (req, res) => {
           comments: {
             take: 3,
             select: {
+              text: true,
               date: true,
               user: {
                 select: {
@@ -458,6 +460,7 @@ const getPosts = async (req, res) => {
             take: 3,
             select: {
               date: true,
+              text: true,
               user: {
                 select: {
                   id: true,
