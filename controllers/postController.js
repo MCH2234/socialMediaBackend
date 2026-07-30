@@ -146,6 +146,14 @@ const getCommentsOfPost = async (req, res) => {
               likes: true,
             },
           },
+          likes: {
+            select: {
+              id: true,
+            },
+            where: {
+              userId: req.user.id,
+            },
+          },
           user: {
             select: {
               id: true,
@@ -160,6 +168,15 @@ const getCommentsOfPost = async (req, res) => {
         },
       });
       if (comments !== null) {
+        comments.forEach((comment) => {
+          if (comment.likes.length === 0) {
+            delete comment.likes;
+            comment.isLikedByUser = true;
+          } else {
+            delete comment.likes;
+            comment.isLikedByUser = false;
+          }
+        });
         return res.json({
           comments: comments,
           cursor:
@@ -406,6 +423,14 @@ const getPosts = async (req, res) => {
               id: true,
               text: true,
               date: true,
+              likes: {
+                select: {
+                  id: true,
+                },
+                where: {
+                  userId: req.user.id,
+                },
+              },
               user: {
                 select: {
                   id: true,
@@ -442,6 +467,14 @@ const getPosts = async (req, res) => {
             delete post.likes;
             post.isLikedByUser = true;
           }
+          post.comments.forEach((comment) => {
+            if (comment.likes.length === 0) {
+              delete comment.likes;
+              comment.isLikedByUser = false;
+            } else {
+              comment.isLikedByUser = true;
+            }
+          });
         });
         return res.json({
           posts: findPosts,
