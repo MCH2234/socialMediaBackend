@@ -160,7 +160,6 @@ const getCommentsOfPost = async (req, res) => {
         },
       });
       if (comments !== null) {
-        console.log(comments, comments.length);
         return res.json({
           comments: comments,
           cursor:
@@ -277,7 +276,6 @@ const getPostsOfUsersCurrentUserFollows = async (req, res) => {
         },
       },
     });
-    console.log(userFollows, allFollowingPosts);
     res.send(allFollowingPosts);
   } catch (error) {
     console.log(error);
