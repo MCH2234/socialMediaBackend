@@ -133,7 +133,7 @@ const getCommentsOfPost = async (req, res) => {
     } else {
       const comments = await prisma.comment.findMany({
         where: {
-          postId: post,
+          postId: postId,
         },
         take: 5,
         skip: 1,
@@ -155,12 +155,18 @@ const getCommentsOfPost = async (req, res) => {
             },
           },
         },
+        orderBy: {
+          date: "desc",
+        },
       });
       if (comments !== null) {
-        const newCursor = comments[comments.length - 1].id;
+        console.log(comments, comments.length);
         return res.json({
           comments: comments,
-          cursor: comments.length === 5 ? newCursor : null,
+          cursor:
+            comments.length > 1 && comments.length === 5
+              ? comments[comments.length - 1].id
+              : null,
         });
       } else {
         return res.json({
