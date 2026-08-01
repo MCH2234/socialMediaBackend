@@ -44,7 +44,7 @@ model FollowRequest {
 model Post {
   id       String      @id @default(uuid())
   userId   String
-  user     User        @relation(fields: [userId], references: [id], onDelete:Cascade)
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   text     String      @db.VarChar(250)
   date     DateTime
   likes    PostLikes[]
@@ -58,7 +58,7 @@ model PostLikes {
   userId String
   postId String
   user   User   @relation(fields: [userId], references: [id])
-  post   Post   @relation(fields: [postId], references: [id], onDelete:Cascade)
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
 }
 
 model Comment {
@@ -68,10 +68,11 @@ model Comment {
   userId          String
   likes           CommentLikes[]
   date            DateTime
-  post            Post?          @relation(fields: [postId], references: [id],onDelete:Cascade)
+  post            Post?          @relation(fields: [postId], references: [id], onDelete: Cascade)
   user            User           @relation(fields: [userId], references: [id])
+  reply_count     Int            @default(0)
   parentCommentId String?
-  parentComment   Comment?       @relation("SubComments", fields: [parentCommentId], references: [id], onDelete:Cascade)
+  parentComment   Comment?       @relation("SubComments", fields: [parentCommentId], references: [id], onDelete: Cascade)
   childComments   Comment[]      @relation("SubComments")
 
   @@map("comments")
@@ -82,5 +83,5 @@ model CommentLikes {
   userId    String
   commentId String
   user      User    @relation(fields: [userId], references: [id])
-  comment   Comment @relation(fields: [commentId], references: [id],onDelete:Cascade)
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
 }

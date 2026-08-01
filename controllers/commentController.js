@@ -65,7 +65,7 @@ const likeComment = async (req, res) => {
       },
     });
     if (!commentExists) {
-      return res.json({
+      return res.status(404).json({
         message: "Comment doesn't exist or couldn't be found",
       });
     } else {
@@ -110,13 +110,15 @@ const likeComment = async (req, res) => {
 
 const unlikeComment = async (req, res) => {
   try {
-    const likeId = parseInt(req.params.likeId);
+    const commentId = req.params.commentId;
     const likeExists = await prisma.commentLikes.findFirst({
       where: {
-        id: likeId,
+        commentId: commentId,
+        userId: req.user.id,
       },
       select: {
         userId: true,
+        id: true,
       },
     });
     if (!likeExists) {
@@ -131,7 +133,7 @@ const unlikeComment = async (req, res) => {
       }
       const unlike = await prisma.commentLikes.delete({
         where: {
-          id: likeId,
+          id: likeExists.id,
         },
       });
       if (!unlike) {
@@ -152,7 +154,7 @@ const unlikeComment = async (req, res) => {
   }
 };
 
-const addCommentToAnotherComment = async (req, res) => {
+const replyToComment = async (req, res) => {
   try {
     const comment = req.body.comment;
     const commentId = req.params.commentId;
@@ -166,7 +168,7 @@ const addCommentToAnotherComment = async (req, res) => {
     });
     if (!commentExists) {
       return res.json({
-        message: "Comment doesn't exist",
+        error: "Comment doesn't exist",
       });
     } else {
       const newComment = await prisma.comment.create({
@@ -178,6 +180,14 @@ const addCommentToAnotherComment = async (req, res) => {
         },
       });
       if (newComment) {
+        await prisma.comment.update({
+          where: {
+            id: commentId,
+          },
+          data: {
+            reply_count: { increment: 1 },
+          },
+        });
         return res.json({
           message: "Comment added successfuly",
         });
@@ -251,7 +261,7 @@ const getRepliesOfComment = async (req, res) => {
   }
 };
 export {
-  addCommentToAnotherComment,
+  replyToComment,
   getAllComments,
   getSpecificComment,
   likeComment,
