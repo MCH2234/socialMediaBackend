@@ -232,7 +232,6 @@ const addComment = async (req, res) => {
       createComment._count = {
         likes: 0,
       };
-      createComment.childComments = [];
       return res.json({
         message: "Comment created successfully",
         comment: createComment,
@@ -451,34 +450,6 @@ const getPosts = async (req, res) => {
                   last: true,
                 },
               },
-              childComments: {
-                take: 3,
-                include: {
-                  user: {
-                    select: {
-                      user: true,
-                      first: true,
-                      last: true,
-                    },
-                  },
-                  likes: {
-                    select: {
-                      id: true,
-                    },
-                    where: {
-                      userId: req.user.id,
-                    },
-                  },
-                  _count: {
-                    select: {
-                      likes: true,
-                    },
-                  },
-                },
-                orderBy: {
-                  date: "desc",
-                },
-              },
               _count: {
                 select: {
                   likes: true,
@@ -509,15 +480,6 @@ const getPosts = async (req, res) => {
           }
           post.comments.forEach((comment) => {
             ///Big O(n^3)=bad , I know, I know
-            comment.childComments.forEach((reply) => {
-              if (reply.likes.length === 0) {
-                delete reply.likes;
-                reply.isLikedByUser = false;
-              } else {
-                delete reply.likes;
-                reply.isLikedByUser = true;
-              }
-            });
             if (comment.likes.length === 0) {
               delete comment.likes;
               comment.isLikedByUser = false;
