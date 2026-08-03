@@ -11,8 +11,8 @@ const getAllComments = async (req, res) => {
       comments: comments,
     });
   } else {
-    res.json({
-      message: "Comments not found",
+    return res.status(404).json({
+      error: "Comments not found",
     });
   }
 };
@@ -47,8 +47,8 @@ const getSpecificComment = async (req, res) => {
       comment: comment,
     });
   } else {
-    res.json({
-      message: "Comment not found!",
+    return res.status(404).json({
+      error: "Comment not found!",
     });
   }
 };
@@ -66,7 +66,7 @@ const likeComment = async (req, res) => {
     });
     if (!commentExists) {
       return res.status(404).json({
-        message: "Comment doesn't exist or couldn't be found",
+        error: "Comment doesn't exist or couldn't be found",
       });
     } else {
       const likeDuplicates = await prisma.commentLikes.findFirst({
@@ -80,7 +80,7 @@ const likeComment = async (req, res) => {
       });
       if (likeDuplicates) {
         return res.json({
-          message: "Comment already liked",
+          error: "Comment already liked",
         });
       } else {
         const addLike = await prisma.commentLikes.create({
@@ -91,11 +91,11 @@ const likeComment = async (req, res) => {
         });
         if (!addLike) {
           return res.json({
-            message: "Comment couldn't be liked",
+            error: "Comment couldn't be liked",
           });
         } else {
           return res.json({
-            message: "Comment liked successfuly",
+            error: "Comment liked successfuly",
           });
         }
       }
@@ -123,12 +123,12 @@ const unlikeComment = async (req, res) => {
     });
     if (!likeExists) {
       return res.json({
-        message: "Can\'t unlike comments that aren\'t liked",
+        error: "Can\'t unlike comments that aren\'t liked",
       });
     } else {
       if (likeExists.userId !== req.user.id) {
         return res.json({
-          message: "Permission denied",
+          error: "Permission denied",
         });
       }
       const unlike = await prisma.commentLikes.delete({
@@ -138,11 +138,11 @@ const unlikeComment = async (req, res) => {
       });
       if (!unlike) {
         return res.json({
-          message: "Couln't unlike the comment",
+          error: "Couln't unlike the comment",
         });
       } else {
         return res.json({
-          message: "Comment unliked successfuly",
+          error: "Comment unliked successfuly",
         });
       }
     }
@@ -178,6 +178,24 @@ const replyToComment = async (req, res) => {
           date: new Date(),
           parentCommentId: commentId,
         },
+        select: {
+          date: true,
+          id: true,
+          text: true,
+          user: {
+            select: {
+              id: true,
+              user: true,
+              first: true,
+              last: true,
+            },
+          },
+          _count: {
+            select: {
+              likes: true,
+            },
+          },
+        },
       });
       if (newComment) {
         await prisma.comment.update({
@@ -188,12 +206,14 @@ const replyToComment = async (req, res) => {
             reply_count: { increment: 1 },
           },
         });
+        newComment.isLikedByUser = false;
         return res.json({
           message: "Comment added successfuly",
+          reply: newComment,
         });
       } else {
         return res.json({
-          message: "Comment couldn't be added",
+          error: "Comment couldn't be added",
         });
       }
     }
@@ -230,32 +250,44 @@ const getRepliesOfComment = async (req, res) => {
             likes: {
               select: {
                 id: true,
-                user: {
-                  select: {
-                    id: true,
-                    user: true,
-                    first: true,
-                    last: true,
-                  },
-                },
+              },
+              where: {
+                userId: req.user.id,
               },
             },
+            _count: {
+              select: {
+                likes: true,
+              },
+            },
+          },
+          orderBy: {
+            date: "desc",
           },
         },
       },
     });
     if (!parentCommentExists) {
       return res.json({
-        message: "Parent comment doesn't exist or couldn't be found",
+        error: "Parent comment doesn't exist or couldn't be found",
       });
     } else {
+      parentCommentExists.childComments.forEach((reply) => {
+        if (reply.likes.length === 0) {
+          delete reply.likes;
+          reply.isLikedByUser = false;
+        } else {
+          delete reply.likes;
+          reply.isLikedByUser = true;
+        }
+      });
       return res.json({
         replies: parentCommentExists,
       });
     }
   } catch (error) {
     console.log(error);
-    return res.json({
+    return res.status(500).json({
       error: "An error occured",
     });
   }
