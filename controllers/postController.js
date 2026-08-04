@@ -410,6 +410,22 @@ const getPosts = async (req, res) => {
               user: true,
               first: true,
               last: true,
+              followers: {
+                select: {
+                  id: true,
+                },
+                where: {
+                  id: req.user.id,
+                },
+              },
+              receivedRequest: {
+                select: {
+                  id: true,
+                },
+                where: {
+                  fromId: req.user.id,
+                },
+              },
             },
           },
           date: true,
@@ -478,8 +494,25 @@ const getPosts = async (req, res) => {
             delete post.likes;
             post.isLikedByUser = true;
           }
+          if (
+            post.user.followers.length === 0 &&
+            post.user.receivedRequest.length === 0 &&
+            req.user.id !== post.user.id
+          ) {
+            delete post.user.followers;
+            delete post.user.receivedRequest;
+            post.userFollowsAuthor = false;
+          } else if (
+            post.user.followers.length >= 1 ||
+            post.user.receivedRequest.length >= 1 ||
+            post.user.id === req.user.id
+          ) {
+            delete post.user.followers;
+            delete post.user.receivedRequest;
+            post.userFollowsAuthor = true;
+          }
           post.comments.forEach((comment) => {
-            ///Big O(n^3)=bad , I know, I know
+            ///Big O(n^2)=bad , I know, I know
             if (comment.likes.length === 0) {
               delete comment.likes;
               comment.isLikedByUser = false;
@@ -511,6 +544,30 @@ const getPosts = async (req, res) => {
               user: true,
               first: true,
               last: true,
+              followers: {
+                select: {
+                  id: true,
+                },
+                where: {
+                  id: req.user.id,
+                },
+              },
+              receivedRequest: {
+                select: {
+                  id: true,
+                },
+                where: {
+                  fromId: req.user.id,
+                },
+              },
+            },
+          },
+          likes: {
+            select: {
+              id: true,
+            },
+            where: {
+              userId: req.user.id,
             },
           },
           date: true,
@@ -523,6 +580,7 @@ const getPosts = async (req, res) => {
           comments: {
             take: 3,
             select: {
+              reply_count: true,
               date: true,
               text: true,
               id: true,
@@ -532,6 +590,14 @@ const getPosts = async (req, res) => {
                   user: true,
                   first: true,
                   last: true,
+                },
+              },
+              likes: {
+                select: {
+                  id: true,
+                },
+                where: {
+                  userId: req.user.id,
                 },
               },
               _count: {
@@ -550,6 +616,42 @@ const getPosts = async (req, res) => {
         },
       });
       if (nextPage) {
+        nextPage.forEach((post) => {
+          if (post.likes.length === 0) {
+            delete post.likes;
+            post.isLikedByUser = false;
+          } else {
+            delete post.likes;
+            post.isLikedByUser = true;
+          }
+          if (
+            post.user.followers.length === 0 &&
+            post.user.receivedRequest.length === 0 &&
+            req.user.id !== post.user.id
+          ) {
+            delete post.user.followers;
+            delete post.user.receivedRequest;
+            post.userFollowsAuthor = false;
+          } else if (
+            post.user.followers.length >= 1 ||
+            post.user.receivedRequest.length >= 1 ||
+            post.user.id === req.user.id
+          ) {
+            delete post.user.followers;
+            delete post.user.receivedRequest;
+            post.userFollowsAuthor = true;
+          }
+          post.comments.forEach((comment) => {
+            ///Big O(n^2)=bad , I know, I know
+            if (comment.likes.length === 0) {
+              delete comment.likes;
+              comment.isLikedByUser = false;
+            } else {
+              delete comment.likes;
+              comment.isLikedByUser = true;
+            }
+          });
+        });
         return res.json({
           posts: nextPage,
           cursor:

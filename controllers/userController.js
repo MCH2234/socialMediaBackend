@@ -138,13 +138,13 @@ const sendfollowRequest = async (req, res) => {
         request,
       });
     } else {
-      return res.json({
-        message: "Follow request failed",
+      return res.status(400).json({
+        error: "Follow request failed",
       });
     }
   } catch (error) {
     console.log(error);
-    res.status(500).send("An error occured");
+    res.status(500).json({ error: "An error occured" });
   }
 };
 
