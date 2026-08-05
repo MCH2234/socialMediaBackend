@@ -7,7 +7,7 @@ const post = Router();
 post.use(passport.authenticate("jwt", { session: false }));
 
 post.get("/", controller.getPostsOfCurrentUser);
-post.post("/", controller.createPost);
+post.post("/", controller.validateAndCreatePost);
 post.get("/all", controller.getPosts);
 // post.get("/likes/:postId", controller.getPostLikes);
 post.post("/like/:postId", controller.likePost);
@@ -17,6 +17,6 @@ post.get("/:postId", controller.getSpecificPost);
 post.put("/:postId", controller.editPost);
 post.delete("/:postId", controller.deletePost);
 post.get("/:postId/comments", controller.getCommentsOfPost);
-post.post("/:postId/comments", controller.addComment);
+post.post("/:postId/comments", controller.validateAndAddComment);
 
 export default post;

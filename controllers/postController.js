@@ -1,42 +1,51 @@
 import { nextDay } from "date-fns";
+import { body, validationResult } from "express-validator";
 import prisma from "../lib/prisma.js";
-const createPost = async (req, res) => {
-  const content = req.body.text;
-  if (req.body.text.length > 250) {
-    return res.json({
-      message: "Post exceeds character limits",
-      length: req.body.text.length,
+const validateAndCreatePost = [
+  body("text").trim().not().isEmpty("You can't publish empty post"),
+  async (req, res) => {
+    const content = req.body.text;
+    const validationError = validationResult(req);
+    if (validationError.isEmpty() === false) {
+      return res.status(409).json({ error: [validationError[0].msg] });
+    }
+    if (req.body.text.length > 250) {
+      return res.json({
+        message: "Post exceeds character limits",
+        length: req.body.text.length,
+      });
+    }
+    const newPost = await prisma.post.create({
+      data: {
+        text: content,
+        date: new Date(),
+        userId: req.user.id,
+      },
     });
-  }
-  const newPost = await prisma.post.create({
-    data: {
-      text: content,
-      date: new Date(),
-      userId: req.user.id,
-    },
-  });
-  if (newPost !== null) {
-    newPost.user = {
-      id: req.user.id,
-      first: req.user.first,
-      last: req.user.last,
-      user: req.user.user,
-    };
-    newPost.isLikedByUser = false;
-    newPost.comments = [];
-    newPost._count = {
-      likes: 0,
-    };
-    delete newPost.userId;
+    if (newPost !== null) {
+      newPost.user = {
+        id: req.user.id,
+        first: req.user.first,
+        last: req.user.last,
+        user: req.user.user,
+      };
+      newPost.isLikedByUser = false;
+      newPost.userFollowsAuthor = true;
+      newPost.comments = [];
+      newPost._count = {
+        likes: 0,
+      };
+      delete newPost.userId;
 
-    return res.json({
-      message: "Post created sucessfully",
-      post: newPost,
-    });
-  } else {
-    res.json({ message: "Failed" });
-  }
-};
+      return res.json({
+        message: "Post created sucessfully",
+        post: newPost,
+      });
+    } else {
+      return res.status(400).json({ error: "Failed to create a post" });
+    }
+  },
+];
 const getPostsOfCurrentUser = async (req, res) => {
   const posts = await prisma.post.findMany({
     where: {
@@ -195,50 +204,61 @@ const getCommentsOfPost = async (req, res) => {
     res.status(500).json({ error: "An error occured" });
   }
 };
-const addComment = async (req, res) => {
-  const postId = req.params.postId;
-  const commentText = req.body.comment;
-  const post = await prisma.post.findUnique({
-    where: {
-      id: postId,
-    },
-  });
-  if (post === null) {
-    return res.json({
-      message: "Post doesn't exist",
-    });
-  } else {
-    if (commentText.length > 100) {
-      return res.json({
-        message: "Comment exceeds character limits",
+const validateAndAddComment = [
+  body("comment").trim().not().isEmpty().withMessage("Comments can't be empty"),
+  async (req, res) => {
+    const validationErrors = validationResult(req);
+    if (validationErrors.isEmpty() === false) {
+      const errors = [];
+      validationErrors.array().forEach((err) => {
+        errors.push(err.msg);
       });
+      return res.status(400).json({ errors: errors });
     }
-    const createComment = await prisma.comment.create({
-      data: {
-        text: commentText,
-        date: new Date(),
-        postId: postId,
-        userId: req.user.id,
+    const postId = req.params.postId;
+    const commentText = req.body.comment;
+    const post = await prisma.post.findUnique({
+      where: {
+        id: postId,
       },
     });
-    if (createComment !== null) {
-      createComment.isLikedByUser = false;
-      createComment.user = {
-        id: req.user.id,
-        user: req.user.user,
-        first: req.user.first,
-        last: req.user.last,
-      };
-      createComment._count = {
-        likes: 0,
-      };
+    if (post === null) {
       return res.json({
-        message: "Comment created successfully",
-        comment: createComment,
+        message: "Post doesn't exist",
       });
+    } else {
+      if (commentText.length > 100) {
+        return res.status(400).json({
+          error: "Comment exceeds character limits",
+        });
+      }
+      const createComment = await prisma.comment.create({
+        data: {
+          text: commentText,
+          date: new Date(),
+          postId: postId,
+          userId: req.user.id,
+        },
+      });
+      if (createComment !== null) {
+        createComment.isLikedByUser = false;
+        createComment.user = {
+          id: req.user.id,
+          user: req.user.user,
+          first: req.user.first,
+          last: req.user.last,
+        };
+        createComment._count = {
+          likes: 0,
+        };
+        return res.json({
+          message: "Comment created successfully",
+          comment: createComment,
+        });
+      }
     }
-  }
-};
+  },
+];
 
 const getPostsOfUsersCurrentUserFollows = async (req, res) => {
   try {
@@ -775,13 +795,13 @@ const editPost = async (req, res) => {
 //   }
 // };
 export {
-  createPost,
+  validateAndCreatePost,
   editPost,
   deletePost,
   getPostsOfCurrentUser,
   getSpecificPost,
   getCommentsOfPost,
-  addComment,
+  validateAndAddComment,
   getPostsOfUsersCurrentUserFollows,
   likePost,
   unlikePost,

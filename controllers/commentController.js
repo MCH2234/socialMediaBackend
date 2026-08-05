@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma.js";
+import { validationResult, body } from "express-validator";
 
 const getAllComments = async (req, res) => {
   const comments = await prisma.comment.findMany({
@@ -154,76 +155,89 @@ const unlikeComment = async (req, res) => {
   }
 };
 
-const replyToComment = async (req, res) => {
-  try {
-    const comment = req.body.comment;
-    const commentId = req.params.commentId;
-    const commentExists = await prisma.comment.findUnique({
-      where: {
-        id: commentId,
-      },
-      select: {
-        id: true,
-      },
-    });
-    if (!commentExists) {
-      return res.json({
-        error: "Comment doesn't exist",
-      });
-    } else {
-      const newComment = await prisma.comment.create({
-        data: {
-          text: comment,
-          userId: req.user.id,
-          date: new Date(),
-          parentCommentId: commentId,
+const validateAndReplyToComment = [
+  body("comment")
+    .trim()
+    .not()
+    .isEmpty()
+    .withMessage("Replies to comments can't be empty"),
+  async (req, res) => {
+    try {
+      const validationErrors = validationResult(req);
+      if (validationErrors.isEmpty() === false) {
+        return res
+          .status(400)
+          .json({ errors: validationErrors.array()[0].msg });
+      }
+      const comment = req.body.comment;
+      const commentId = req.params.commentId;
+      const commentExists = await prisma.comment.findUnique({
+        where: {
+          id: commentId,
         },
         select: {
-          date: true,
           id: true,
-          text: true,
-          user: {
-            select: {
-              id: true,
-              user: true,
-              first: true,
-              last: true,
-            },
-          },
-          _count: {
-            select: {
-              likes: true,
-            },
-          },
         },
       });
-      if (newComment) {
-        await prisma.comment.update({
-          where: {
-            id: commentId,
-          },
-          data: {
-            reply_count: { increment: 1 },
-          },
-        });
-        newComment.isLikedByUser = false;
+      if (!commentExists) {
         return res.json({
-          message: "Comment added successfuly",
-          reply: newComment,
+          error: "Comment doesn't exist",
         });
       } else {
-        return res.json({
-          error: "Comment couldn't be added",
+        const newComment = await prisma.comment.create({
+          data: {
+            text: comment,
+            userId: req.user.id,
+            date: new Date(),
+            parentCommentId: commentId,
+          },
+          select: {
+            date: true,
+            id: true,
+            text: true,
+            user: {
+              select: {
+                id: true,
+                user: true,
+                first: true,
+                last: true,
+              },
+            },
+            _count: {
+              select: {
+                likes: true,
+              },
+            },
+          },
         });
+        if (newComment) {
+          await prisma.comment.update({
+            where: {
+              id: commentId,
+            },
+            data: {
+              reply_count: { increment: 1 },
+            },
+          });
+          newComment.isLikedByUser = false;
+          return res.json({
+            message: "Comment added successfuly",
+            reply: newComment,
+          });
+        } else {
+          return res.json({
+            error: "Comment couldn't be added",
+          });
+        }
       }
+    } catch (error) {
+      console.log(error);
+      return res.json({
+        error: "An error occured",
+      });
     }
-  } catch (error) {
-    console.log(error);
-    return res.json({
-      error: "An error occured",
-    });
-  }
-};
+  },
+];
 
 const getRepliesOfComment = async (req, res) => {
   try {
@@ -293,7 +307,7 @@ const getRepliesOfComment = async (req, res) => {
   }
 };
 export {
-  replyToComment,
+  validateAndReplyToComment,
   getAllComments,
   getSpecificComment,
   likeComment,
