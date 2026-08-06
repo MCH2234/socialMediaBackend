@@ -11,7 +11,9 @@ const signupValidation = [
     .isEmpty()
     .withMessage("User field can't be empty")
     .isLength({ min: 3, max: 15 })
-    .withMessage("Username has to be between 3 and 15 characters"),
+    .withMessage("Username has to be between 3 and 15 characters")
+    .matches(/^\S+$/)
+    .withMessage("Username can't contain whitespace"),
   body("password")
     .not()
     .isEmpty()
@@ -22,12 +24,16 @@ const signupValidation = [
     .trim()
     .not()
     .isEmpty()
-    .withMessage("First name field can't be empty"),
+    .withMessage("First name field can't be empty")
+    .matches(/^\S+$/)
+    .withMessage("First name can't contain whitespace"),
   body("last")
     .trim()
     .not()
     .isEmpty()
-    .withMessage("Last name field can't be empty"),
+    .withMessage("Last name field can't be empty")
+    .matches(/^\S+$/)
+    .withMessage("Last name can't contain whitespace"),
   ,
   async (req, res) => {
     const valErrors = validationResult(req);

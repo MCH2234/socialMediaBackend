@@ -306,8 +306,96 @@ const getRepliesOfComment = async (req, res) => {
     });
   }
 };
+
+const deleteComment = async (req, res) => {
+  try {
+    const commentId = req.params.commentId;
+    const commentExists = await prisma.comment.findUnique({
+      where: {
+        id: commentId,
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+    if (commentExists) {
+      if (commentExists.userId !== req.user.id) {
+        return res.status(401).json({ error: "Permission denied" });
+      }
+      const deleteTheComment = await prisma.comment.delete({
+        where: {
+          id: commentId,
+        },
+      });
+      if (deleteTheComment) {
+        return res.json({
+          message: "Comment deleted successfuly",
+        });
+      } else {
+        return res.status(400).json({
+          error: "Comment couldn\'t be deleted",
+        });
+      }
+    } else {
+      return res.status(404).json({
+        error: "Comment doesn't exist or couldn't be found",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: "An error occured" });
+  }
+};
+
+const editComment = async (req, res) => {
+  try {
+    const commentId = req.params.commentId;
+    const comment = req.body.comment;
+    const commentExists = await prisma.comment.findUnique({
+      where: {
+        id: commentId,
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+    if (commentExists) {
+      if (commentExists.userId !== req.user.id) {
+        return res.status(401).json({
+          error: "Permission denied",
+        });
+      }
+      const newComment = await prisma.comment.update({
+        where: {
+          id: commentId,
+        },
+        data: {
+          text: comment,
+        },
+      });
+      if (!newComment) {
+        return res.status(400).json({
+          error: "Comment couldn't be edited",
+        });
+      } else {
+        return res.json({
+          message: "Comment edited successfuly",
+          comment: newComment,
+        });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: "An error occured" });
+  }
+};
+
 export {
   validateAndReplyToComment,
+  deleteComment,
+  editComment,
   getAllComments,
   getSpecificComment,
   likeComment,
