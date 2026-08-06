@@ -317,6 +317,7 @@ const deleteComment = async (req, res) => {
       select: {
         id: true,
         userId: true,
+        parentCommentId: true,
       },
     });
     if (commentExists) {
@@ -329,6 +330,16 @@ const deleteComment = async (req, res) => {
         },
       });
       if (deleteTheComment) {
+        if (commentExists.parentCommentId !== null) {
+          const updateReplyCount = await prisma.comment.update({
+            where: { id: commentExists.parentCommentId },
+            data: {
+              reply_count: {
+                decrement: 1,
+              },
+            },
+          });
+        }
         return res.json({
           message: "Comment deleted successfuly",
         });
